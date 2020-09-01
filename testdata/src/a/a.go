@@ -1,8 +1,8 @@
 package a
 
 type hoge struct {
-	FooBar   int // want "fooBar"
-	FizzBazz int // want "fizzBazz"
+	FooBar   int
+	FizzBazz int
 }
 
 func main() {

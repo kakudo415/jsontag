@@ -35,7 +35,22 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
-		pass.Reportf(n.Pos(), "%s\n", toPascal(n.(*ast.Field).Names[0].Name))
+		pass.Report(analysis.Diagnostic{
+			Pos:     n.Pos(),
+			Message: "Want to add JSON tag like this? (-fix needed)",
+			SuggestedFixes: []analysis.SuggestedFix{
+				{
+					Message: "Add Tag",
+					TextEdits: []analysis.TextEdit{
+						{
+							Pos:     n.Pos(),
+							End:     n.End(),
+							NewText: []byte("`json:\"" + toPascal(n.(*ast.Field).Names[0].Name) + "\"`"),
+						},
+					},
+				},
+			},
+		})
 	})
 
 	return nil, nil
