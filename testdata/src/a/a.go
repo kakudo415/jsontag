@@ -1,8 +1,14 @@
 package a
 
-func f() {
-	// The pattern can be written in regular expression.
-	var gopher int // want "pattern"
-	print(gopher)  // want "identifier is gopher"
+type hoge struct {
+	FooBar   int // want "fooBar"
+	FizzBazz int // want "fizzBazz"
 }
 
+func main() {
+	var fuga = hoge{
+		FooBar:   3,
+		FizzBazz: 2,
+	}
+	println(fuga)
+}

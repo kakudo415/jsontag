@@ -2,6 +2,7 @@ package jsontag
 
 import (
 	"go/ast"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -9,6 +10,8 @@ import (
 )
 
 const doc = "jsontag is ..."
+
+var where int
 
 // Analyzer is ...
 var Analyzer = &analysis.Analyzer{
@@ -20,22 +23,27 @@ var Analyzer = &analysis.Analyzer{
 	},
 }
 
+func init() {
+	Analyzer.Flags.IntVar(&where, "where", -1, "USAGE (TODO)")
+}
+
 func run(pass *analysis.Pass) (interface{}, error) {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
 	nodeFilter := []ast.Node{
-		(*ast.Ident)(nil),
+		(*ast.Field)(nil),
 	}
 
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
-		switch n := n.(type) {
-		case *ast.Ident:
-			if n.Name == "gopher" {
-				pass.Reportf(n.Pos(), "identifier is gopher")
-			}
-		}
+		pass.Reportf(n.Pos(), "%s\n", toPascal(n.(*ast.Field).Names[0].Name))
 	})
 
 	return nil, nil
 }
 
+func toPascal(a string) string {
+	if len(a) < 2 {
+		return a
+	}
+	return strings.ToLower(string([]rune(a)[0])) + string([]rune(a)[1:])
+}
