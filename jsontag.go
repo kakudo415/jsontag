@@ -2,9 +2,10 @@ package jsontag
 
 import (
 	"go/ast"
-	"go/token"
+	"strconv"
 	"strings"
 
+	"github.com/k0kubun/pp"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -12,7 +13,22 @@ import (
 
 const doc = "jsontag is ..."
 
-var where int
+type intset map[int]bool
+
+var where intset
+
+func (i *intset) String() string {
+	return pp.Sprintln(i)
+}
+
+func (i *intset) Set(v string) error {
+	n, e := strconv.Atoi(v)
+	if e != nil {
+		return e
+	}
+	(*i)[n] = true
+	return nil
+}
 
 // Analyzer is ...
 var Analyzer = &analysis.Analyzer{
@@ -25,7 +41,8 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func init() {
-	Analyzer.Flags.IntVar(&where, "where", -1, "USAGE (TODO)")
+	where = intset{}
+	Analyzer.Flags.Var(&where, "where", "USAGE - TODO")
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -36,7 +53,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
-		if n.Pos() != token.Pos(where) {
+		if !where[int(n.Pos())] {
 			return
 		}
 		pass.Report(analysis.Diagnostic{
