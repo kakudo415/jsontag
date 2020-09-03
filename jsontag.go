@@ -52,7 +52,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			if f == nil {
 				panic(errors.New("どのファイルにも属さないフィールド"))
 			}
-			format.Node(os.Stdout, pass.Fset, f)
+			file, err := os.OpenFile(pass.Fset.File(n.Pos()).Name(), os.O_WRONLY, 0666)
+			if err != nil {
+				panic(err)
+			}
+			format.Node(file, pass.Fset, f)
 		}
 	})
 
