@@ -6,10 +6,8 @@ import (
 	"go/format"
 	"go/token"
 	"os"
-	"strconv"
 	"strings"
 
-	"github.com/k0kubun/pp"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -17,22 +15,7 @@ import (
 
 const doc = "jsontag is ..."
 
-type intset map[int]bool
-
-var where intset
-
-func (i *intset) String() string {
-	return pp.Sprintln(i)
-}
-
-func (i *intset) Set(v string) error {
-	n, e := strconv.Atoi(v)
-	if e != nil {
-		return e
-	}
-	(*i)[n] = true
-	return nil
-}
+var where int
 
 // Analyzer is ...
 var Analyzer = &analysis.Analyzer{
@@ -45,8 +28,7 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func init() {
-	where = intset{}
-	Analyzer.Flags.Var(&where, "where", "USAGE - TODO")
+	Analyzer.Flags.IntVar(&where, "where", -1, "USAGE - TODO")
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -57,11 +39,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
-		if !where[int(n.Pos())] {
-			return
-		}
 		switch n := n.(type) {
 		case *ast.Field:
+			if token.Pos(where) < n.Pos() || n.End() < token.Pos(where) {
+				return
+			}
+
 			n.Tag = &ast.BasicLit{}
 			n.Tag.Kind = token.STRING
 			n.Tag.Value = fieldToJSONTag(n)
