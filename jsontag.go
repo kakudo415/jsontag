@@ -76,15 +76,15 @@ func whoseChild(files []*ast.File, n ast.Node) *ast.File {
 
 func fieldToJSONTag(n ast.Node, o string) string {
 	if o == "omitempty" {
-		return "`json:\"" + toPascal(n.(*ast.Field).Names[0].Name) + ",omitempty\"`"
+		return "`json:\"" + toCamel(n.(*ast.Field).Names[0].Name) + ",omitempty\"`"
 	}
 	if o == "ignore" {
 		return "`json:\"-\"`"
 	}
-	return "`json:\"" + toPascal(n.(*ast.Field).Names[0].Name) + "\"`"
+	return "`json:\"" + toCamel(n.(*ast.Field).Names[0].Name) + "\"`"
 }
 
-func toPascal(a string) string {
+func toCamel(a string) string {
 	if len(a) < 2 {
 		return a
 	}
