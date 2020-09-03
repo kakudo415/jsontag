@@ -16,6 +16,7 @@ import (
 const doc = "jsontag is ..."
 
 var where int
+var option string
 
 // Analyzer is ...
 var Analyzer = &analysis.Analyzer{
@@ -29,6 +30,7 @@ var Analyzer = &analysis.Analyzer{
 
 func init() {
 	Analyzer.Flags.IntVar(&where, "where", -1, "USAGE - TODO")
+	Analyzer.Flags.StringVar(&option, "option", "", "USAGE - TODO")
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -47,7 +49,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 			n.Tag = &ast.BasicLit{}
 			n.Tag.Kind = token.STRING
-			n.Tag.Value = fieldToJSONTag(n)
+			n.Tag.Value = fieldToJSONTag(n, option)
 			f := whoseChild(pass.Files, n)
 			if f == nil {
 				panic(errors.New("どのファイルにも属さないフィールド"))
@@ -72,7 +74,13 @@ func whoseChild(files []*ast.File, n ast.Node) *ast.File {
 	return nil
 }
 
-func fieldToJSONTag(n ast.Node) string {
+func fieldToJSONTag(n ast.Node, o string) string {
+	if o == "omitempty" {
+		return "`json:\"" + toPascal(n.(*ast.Field).Names[0].Name) + ",omitempty\"`"
+	}
+	if o == "ignore" {
+		return "`json:\"-\"`"
+	}
 	return "`json:\"" + toPascal(n.(*ast.Field).Names[0].Name) + "\"`"
 }
 
