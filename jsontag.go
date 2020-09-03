@@ -2,6 +2,7 @@ package jsontag
 
 import (
 	"go/ast"
+	"go/token"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -35,9 +36,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
+		if n.Pos() != token.Pos(where) {
+			return
+		}
 		pass.Report(analysis.Diagnostic{
 			Pos:     n.Pos(),
-			Message: "Want to add JSON tag like this? (-fix needed)",
+			Message: "Want to add JSON tag like this? (-fix needed)\n" + fieldToJSONTag(n) + "\n",
 			SuggestedFixes: []analysis.SuggestedFix{
 				{
 					Message: "Add Tag",
@@ -45,7 +49,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 						{
 							Pos:     n.Pos(),
 							End:     n.End(),
-							NewText: []byte("`json:\"" + toPascal(n.(*ast.Field).Names[0].Name) + "\"`"),
+							NewText: []byte(fieldToJSONTag(n)),
 						},
 					},
 				},
@@ -54,6 +58,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	})
 
 	return nil, nil
+}
+
+func fieldToJSONTag(n ast.Node) string {
+	return "`json:\"" + toPascal(n.(*ast.Field).Names[0].Name) + "\"`"
 }
 
 func toPascal(a string) string {
