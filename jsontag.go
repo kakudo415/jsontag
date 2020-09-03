@@ -1,6 +1,7 @@
 package jsontag
 
 import (
+	"errors"
 	"go/ast"
 	"go/format"
 	"go/token"
@@ -64,12 +65,24 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			n.Tag = &ast.BasicLit{}
 			n.Tag.Kind = token.STRING
 			n.Tag.Value = fieldToJSONTag(n)
+			f := whoseChild(pass.Files, n)
+			if f == nil {
+				panic(errors.New("どのファイルにも属さないフィールド"))
+			}
+			format.Node(os.Stdout, pass.Fset, f)
 		}
 	})
 
-	format.Node(os.Stdout, pass.Fset, pass.Files[0]) // FIXME ファイルが複数ないことを決め打ちしている
-
 	return nil, nil
+}
+
+func whoseChild(files []*ast.File, n ast.Node) *ast.File {
+	for _, f := range files {
+		if f.Pos() < n.Pos() && n.End() < f.End() {
+			return f
+		}
+	}
+	return nil
 }
 
 func fieldToJSONTag(n ast.Node) string {
