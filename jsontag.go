@@ -2,6 +2,9 @@ package jsontag
 
 import (
 	"go/ast"
+	"go/format"
+	"go/token"
+	"os"
 	"strconv"
 	"strings"
 
@@ -56,23 +59,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		if !where[int(n.Pos())] {
 			return
 		}
-		pass.Report(analysis.Diagnostic{
-			Pos:     n.Pos(),
-			Message: "Want to add JSON tag like this? (-fix needed)\n" + fieldToJSONTag(n) + "\n",
-			SuggestedFixes: []analysis.SuggestedFix{
-				{
-					Message: "Add Tag",
-					TextEdits: []analysis.TextEdit{
-						{
-							Pos:     n.Pos(),
-							End:     n.End(),
-							NewText: []byte(fieldToJSONTag(n)),
-						},
-					},
-				},
-			},
-		})
+		switch n := n.(type) {
+		case *ast.Field:
+			n.Tag = &ast.BasicLit{}
+			n.Tag.Kind = token.STRING
+			n.Tag.Value = fieldToJSONTag(n)
+		}
 	})
+
+	format.Node(os.Stdout, pass.Fset, pass.Files[0]) // FIXME ファイルが複数ないことを決め打ちしている
 
 	return nil, nil
 }
