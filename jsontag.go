@@ -17,7 +17,7 @@ import (
 
 const doc = "jsontag is ..."
 
-var where int
+var offset int
 var option string
 
 // Analyzer is ...
@@ -31,7 +31,7 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func init() {
-	Analyzer.Flags.IntVar(&where, "where", -1, "タグを追加したいフィールドのオフセット位置")
+	Analyzer.Flags.IntVar(&offset, "offset", -1, "タグを追加したいフィールドのオフセット位置")
 	Analyzer.Flags.StringVar(&option, "option", "", "タグのオプション、詳しくは README.md を読んでください")
 }
 
@@ -45,7 +45,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		switch n := n.(type) {
 		case *ast.Field:
-			if token.Pos(where) < n.Pos() || n.End() < token.Pos(where) {
+			if token.Pos(offset) < n.Pos() || n.End() < token.Pos(offset) {
 				return
 			}
 

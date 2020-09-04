@@ -16,7 +16,7 @@ type hoge struct {
 
 
 ```bash
-go vet -vettool="main.exe" --jsontag.where=24 --jsontag.option=omitempty <source.go>
+go vet -vettool="main.exe" --jsontag.offset=24 --jsontag.option=omitempty <source.go>
 ```
 
 ```go
@@ -30,7 +30,7 @@ type hoge struct {
 ## オプション
 
 ```
---jsontag.where=${cursor_offset}
+--jsontag.offset=${cursor_offset}
 ```
 
 ```
