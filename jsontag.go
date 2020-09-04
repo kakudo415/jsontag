@@ -172,7 +172,7 @@ func formatFieldTag(tags []*fieldTag) string {
 
 func whoseChild(files []*ast.File, n ast.Node) *ast.File {
 	for _, f := range files {
-		if f.Pos() < n.Pos() && n.End() < f.End() {
+		if f.Pos() < n.Pos() && n.Pos() < f.End() {
 			return f
 		}
 	}
