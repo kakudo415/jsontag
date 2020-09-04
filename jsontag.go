@@ -49,6 +49,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				return
 			}
 
+			if !n.Names[0].IsExported() {
+				pass.Reportf(n.Pos(), n.Names[0].Name+" is NOT exported")
+				return
+			}
+
 			if n.Tag == nil {
 				n.Tag = &ast.BasicLit{}
 				n.Tag.Kind = token.STRING
