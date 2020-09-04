@@ -6,7 +6,9 @@ import (
 	"go/format"
 	"go/token"
 	"os"
+	"strconv"
 	"strings"
+	"unicode"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -47,9 +49,32 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				return
 			}
 
-			n.Tag = &ast.BasicLit{}
-			n.Tag.Kind = token.STRING
-			n.Tag.Value = fieldToJSONTag(n, option)
+			if n.Tag == nil {
+				n.Tag = &ast.BasicLit{}
+				n.Tag.Kind = token.STRING
+			}
+
+			tags := parseFieldTag(n.Tag.Value)
+			var jsontag *fieldTag
+			for _, tag := range tags {
+				if tag.key == "json" {
+					jsontag = tag
+				}
+			}
+
+			if jsontag != nil {
+				return
+			}
+
+			jsontag = &fieldTag{
+				key:   "json",
+				value: fieldToJSONTagValue(n, option),
+			}
+
+			tags = append(tags, jsontag)
+
+			n.Tag.Value = formatFieldTag(tags)
+
 			f := whoseChild(pass.Files, n)
 			if f == nil {
 				panic(errors.New("どのファイルにも属さないフィールド"))
@@ -65,6 +90,86 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
+type fieldTag struct {
+	key   string
+	value string
+}
+
+func parseFieldTag(src string) []*fieldTag {
+	tags := []*fieldTag{}
+	src, err := strconv.Unquote(src)
+	if err != nil {
+		return nil
+	}
+
+	tokens := tagLexer(src)
+
+	for i := 0; i < len(tokens); {
+		tag := fieldTag{}
+		if (i+1 < len(tokens)) && tokens[i+1] == ":" {
+			tag.key = tokens[i]
+			tag.value = tokens[i+2]
+			i += 3
+		} else {
+			tag.key = tokens[i]
+			i++
+		}
+		tags = append(tags, &tag)
+	}
+
+	return tags
+}
+
+func tagLexer(src string) []string {
+	var tokens []string
+	chars := []rune(src)
+
+	for pos := 0; pos < len(chars); {
+		switch {
+		case unicode.IsLetter(chars[pos]):
+			var token string
+			for pos < len(chars) && unicode.IsLetter(chars[pos]) {
+				token += string(chars[pos])
+				pos++
+			}
+			tokens = append(tokens, token)
+		case chars[pos] == ':':
+			tokens = append(tokens, ":")
+			pos++
+		case chars[pos] == '"':
+			pos++
+			var token string
+			for pos < len(chars) && unicode.IsLetter(chars[pos]) {
+				token += string(chars[pos])
+				pos++
+			}
+			tokens = append(tokens, token)
+			pos++
+		case unicode.IsSpace(chars[pos]):
+			for pos < len(chars) && unicode.IsSpace(chars[pos]) {
+				pos++
+			}
+		}
+	}
+	return tokens
+}
+
+func formatFieldTag(tags []*fieldTag) string {
+	s := "`"
+	for i, tag := range tags {
+		if i > 0 {
+			s += " "
+		}
+		if len(tag.value) > 0 {
+			s += tag.key + `:"` + tag.value + `"`
+		} else {
+			s += tag.key
+		}
+	}
+	s += "`"
+	return s
+}
+
 func whoseChild(files []*ast.File, n ast.Node) *ast.File {
 	for _, f := range files {
 		if f.Pos() < n.Pos() && n.End() < f.End() {
@@ -74,14 +179,14 @@ func whoseChild(files []*ast.File, n ast.Node) *ast.File {
 	return nil
 }
 
-func fieldToJSONTag(n ast.Node, o string) string {
+func fieldToJSONTagValue(n ast.Node, o string) string {
 	if o == "omitempty" {
-		return "`json:\"" + toCamel(n.(*ast.Field).Names[0].Name) + ",omitempty\"`"
+		return toCamel(n.(*ast.Field).Names[0].Name) + ",omitempty"
 	}
 	if o == "ignore" {
-		return "`json:\"-\"`"
+		return "-"
 	}
-	return "`json:\"" + toCamel(n.(*ast.Field).Names[0].Name) + "\"`"
+	return toCamel(n.(*ast.Field).Names[0].Name)
 }
 
 func toCamel(a string) string {
