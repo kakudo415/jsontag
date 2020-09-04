@@ -31,8 +31,8 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func init() {
-	Analyzer.Flags.IntVar(&where, "where", -1, "USAGE - TODO")
-	Analyzer.Flags.StringVar(&option, "option", "", "USAGE - TODO")
+	Analyzer.Flags.IntVar(&where, "where", -1, "タグを追加したいフィールドのオフセット位置")
+	Analyzer.Flags.StringVar(&option, "option", "", "タグのオプション、詳しくは README.md を読んでください")
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
